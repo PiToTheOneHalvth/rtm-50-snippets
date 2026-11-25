@@ -1,16 +1,16 @@
 """
-Build rtm_50_snippets.ipynb from the snippet .py files.
+Build one .ipynb notebook per snippet, written to notebooks/<name>.ipynb.
 
-Every snippet becomes two cells:
-  - a markdown cell with the file's docstring (what it does, key ideas,
+Every notebook has two cells:
+  - a markdown cell with the snippet's docstring (what it does, key ideas,
     what to change), and
   - a code cell that renders the MP4 and embeds it inline.
 
 Usage:
-    python scripts/build_notebook.py          # writes rtm_50_snippets.ipynb
+    python scripts/build_notebook.py          # writes notebooks/01_*.ipynb ... 50_*.ipynb
 
-Pure stdlib — no notebook packages required to GENERATE the notebook
-(you only need a Jupyter kernel to run it).
+Pure stdlib — no notebook packages required to GENERATE the notebooks
+(you only need a Jupyter kernel to run them).
 """
 import ast
 import glob
@@ -19,35 +19,7 @@ import os
 import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NOTEBOOK = os.path.join(ROOT, "rtm_50_snippets.ipynb")
-
-INTRO_MD = """\
-# RTM — 50 Snippets (notebook edition)
-
-One interactive notebook for trying [real-time-manim](https://github.com/axioviva/real-time-manim):
-**each cell is one complete snippet** — it builds a `Scene`, renders it to
-`outputs/<name>.mp4` (1920×1080 @ 60 fps), and embeds the video right below the cell.
-
-## Setup
-
-```bash
-pip install "real-time-manim[typst]" jupyter   # + molten-vk and ffmpeg on macOS
-jupyter notebook rtm_50_snippets.ipynb
-```
-
-Then run any cell — or all of them (≈2 minutes for all 50).
-
-## How to read a cell
-
-1. Read the markdown above it: what the scene does and what to change.
-2. Run the code cell: an MP4 lands in `outputs/` and plays inline.
-3. Change one number (a `run_time`, a color, an angle) and re-run.
-
-Each cell is self-contained — imports, scene, render, display — so cells can
-be run in any order. The canonical file format is still `snippets/*.py`
-(see the README); regenerate this notebook anytime with
-`python scripts/build_notebook.py`.
-"""
+NOTEBOOKS_DIR = os.path.join(ROOT, "notebooks")
 
 
 def docstring_to_markdown(doc):
@@ -60,16 +32,19 @@ def docstring_to_markdown(doc):
         if line.startswith("Run:") or line.startswith("Output:"):
             continue
         if re.match(r"^\d{2} — ", line):
-            out.append("## " + line)
+            out.append("# " + line)
         elif re.match(r"^(What this does|Key ideas|Try changing):$", line):
             out.append("**" + line + "**")
         else:
             out.append(line)
+    out.append("")
+    out.append("Run the code cell below to render this scene "
+               "and play it back inline.")
     return "\n".join(out).strip()
 
 
-def snippet_to_cells(path):
-    """Return (markdown_cell, code_cell) for one snippet file."""
+def snippet_to_notebook(path):
+    """Build the two-cell notebook dict for one snippet file."""
     src = open(path).read()
     tree = ast.parse(src)
     doc = ast.get_docstring(tree, clean=False) or ""
@@ -107,18 +82,6 @@ def snippet_to_cells(path):
         "outputs": [],
         "source": body.splitlines(keepends=True),
     }
-    return markdown, code
-
-
-def main():
-    snippets = sorted(glob.glob(os.path.join(ROOT, "snippets", "*.py")))
-    cells = [
-        {"cell_type": "markdown", "metadata": {}, "source": INTRO_MD.splitlines(keepends=True)}
-    ]
-    for path in snippets:
-        md, code = snippet_to_cells(path)
-        cells.extend([md, code])
-
     notebook = {
         "nbformat": 4,
         "nbformat_minor": 5,
@@ -130,11 +93,22 @@ def main():
             },
             "language_info": {"name": "python", "version": "3.12"},
         },
-        "cells": cells,
+        "cells": [markdown, code],
     }
-    with open(NOTEBOOK, "w") as f:
-        json.dump(notebook, f, indent=1, ensure_ascii=False)
-    print(f"wrote {NOTEBOOK} ({len(snippets)} snippets, {len(cells)} cells)")
+    return notebook
+
+
+def main():
+    snippets = sorted(glob.glob(os.path.join(ROOT, "snippets", "*.py")))
+    os.makedirs(NOTEBOOKS_DIR, exist_ok=True)
+    written = 0
+    for path in snippets:
+        stem = os.path.splitext(os.path.basename(path))[0]
+        out = os.path.join(NOTEBOOKS_DIR, f"{stem}.ipynb")
+        with open(out, "w") as f:
+            json.dump(snippet_to_notebook(path), f, indent=1, ensure_ascii=False)
+        written += 1
+    print(f"wrote {written} notebooks to notebooks/")
 
 
 if __name__ == "__main__":

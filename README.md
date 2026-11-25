@@ -44,17 +44,18 @@ python render_all.py 01 05 18   # just those three
 
 ## Notebook edition
 
-`rtm_50_snippets.ipynb` is the same 50 snippets as interactive Jupyter cells:
-each snippet is a markdown cell (what it does, what to change) + a code cell that
-renders the MP4 **and embeds the video inline** in the notebook.
+Every snippet also ships as its **own Jupyter notebook** in `notebooks/` —
+`notebooks/01_square_to_circle.ipynb`, …, `notebooks/50_grand_finale.ipynb`.
+Each notebook has two cells: the explanation, and a code cell that renders the
+MP4 **and embeds the video inline** below it.
 
 ```bash
 pip install jupyter              # any frontend works: JupyterLab, classic, VS Code
-jupyter notebook rtm_50_snippets.ipynb
+jupyter notebook notebooks/01_square_to_circle.ipynb
 ```
 
-Every cell is self-contained (imports, scene, render, display) — run one, or run
-all (~2 minutes). The notebook is generated from `snippets/*.py` by
+Run the single code cell — the video lands in `notebooks/outputs/` and plays
+right in the notebook. All 50 notebooks are generated from `snippets/*.py` by
 `python scripts/build_notebook.py`, so the `.py` files stay the source of truth.
 
 ## The shape of every snippet
