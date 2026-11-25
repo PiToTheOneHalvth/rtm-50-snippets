@@ -1,0 +1,14 @@
+# rendered videos
+outputs/
+*.mp4
+*.mov
+
+# manim/rtm temp trees
+media/
+
+# python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
