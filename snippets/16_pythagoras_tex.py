@@ -1,4 +1,4 @@
-"""
+r"""
 16 — Pythagoras in TeX
 ======================
 What this does:
